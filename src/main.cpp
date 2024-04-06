@@ -1,56 +1,16 @@
-#include <bits/stdc++.h>
+#include <vector>
+#include <iostream>
+#include "utils.h"
+#include "brute_force.h"
 
 using std::cin;
-using std::cout;
+using std::ios_base;
 using std::vector;
-
-int max_index(vector<int> &v) {
-    auto mx = max_element(v.begin(), v.end());
-
-    return std::distance(v.begin(), mx);
-}
-
-void print_vector(vector<int> &v) {
-    for (auto &i: v) {
-        cout << i << " ";
-    }
-    cout << "\n";
-}
-
-int greedy_estimation(int N, int M, vector<vector<int>> &edges, vector<int> degree) {
-    int answer = 0;
-    int notSelected = N;
-    bool isCompleted = false;
-
-    vector<bool> included(N, false);
-    
-    while (notSelected > 0) {
-        int idx = max_index(degree);
-
-        ++answer;
-        --notSelected;
-
-        included[idx] = true;
-
-        for (auto &v: edges[idx]) {
-            if (!included[v]) {
-                --notSelected;
-            }
-
-            included[v] = true;
-            degree[v] = -1;
-        }
-
-        degree[idx] = -1;
-    }
-
-    return answer;
-}
 
 int main(int argc, char **argv)
 {
-    std::ios_base::sync_with_stdio(false);
-    std::cin.tie(nullptr);
+    ios_base::sync_with_stdio(false);
+    cin.tie(nullptr);
 
     if (argc < 3) {
         cout << "Usage: ./power_grid <input_path> <output_path>";
@@ -61,10 +21,11 @@ int main(int argc, char **argv)
     freopen(argv[2], "w", stdout);
 
     int N, M;
-    std::cin >> N >> M;
+    cin >> N >> M;
 
-    std::vector<int> degree(N);
-    std::vector<vector<int>> edges(N, vector<int>());
+    vector<int> degree(N);
+    vector<vector<int>> edges(N, vector<int>());
+    vector<vector<int>> adj(N, vector<int>(N));
 
     for (int i = 0; i < M; ++i)
     {
@@ -77,7 +38,13 @@ int main(int argc, char **argv)
 
         ++degree[u];
         ++degree[v];
+
+        adj[u][v] = 1;
+        adj[v][u] = 1;
     }
 
-    cout << greedy_estimation(N, M, edges, degree);
+    cout << greedy_estimation(N, edges, degree) << "\n";
+
+    auto ans = bruteforce_solve(N, adj);
+    print_answer(ans);
 }
