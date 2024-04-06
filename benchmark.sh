@@ -1,7 +1,7 @@
 #!/bin/sh
 
-if [ ! -f power_grid ]; then
-    make build
+if [ ! -f power_grid ] || [ ! -f validator ]; then
+    make
 fi
 
 if [ ! -d PowerGrid ]; then
@@ -16,5 +16,7 @@ for filename in PowerGrid/*; do
     name=${filename##*/}
 	echo $name
 	time -p ./power_grid $filename out/$name.out
+    echo "\n"
+    ./validator $filename out/$name.out
     echo "\n"
 done
