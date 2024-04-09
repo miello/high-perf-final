@@ -43,8 +43,11 @@ int main(int argc, char **argv)
         adj[v][u] = 1;
     }
 
-    // cout << greedy_estimation(N, edges, degree) << "\n";
+    auto ans = greedy_estimation(N, edges, degree);
 
-    auto ans = bruteforce_solve(N, adj);
-    print_answer(ans);
+    // cout << "Greedy Answer: " << ans.first << std::endl;
+
+    bruteforce_solve(N, edges, ans);
+    
+    print_answer(ans.second);
 }

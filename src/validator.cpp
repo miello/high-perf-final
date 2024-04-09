@@ -47,5 +47,5 @@ int main(int argc, char **argv)
         assert(selected[i]);
     }
 
-    cout << "Vertex is covered (but might not optimal)" << "\n";
+    cout << "Vertex is covered (but might not optimal)";
 }

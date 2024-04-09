@@ -8,6 +8,7 @@
 using std::max_element;
 using std::vector;
 using std::cout;
+using std::pair;
 
 int max_index(vector<int> &v) {
     auto mx = max_element(v.begin(), v.end());
@@ -26,15 +27,20 @@ void debug_print_vector(vector<T> &v) {
 template <typename T>
 void print_answer(vector<T> &v) {
     for (auto i: v) {
-        cout << i;
+        cout << (i == -1 ? 0: i);
     }
 }
 
-int greedy_estimation(int N, vector<vector<int>> &edges, vector<int> degree) {
+pair<int, vector<int>> greedy_estimation(
+    int N, 
+    vector<vector<int>> &edges, 
+    vector<int> degree
+) {
     int answer = 0;
     int notSelected = N;
 
     vector<bool> included(N, false);
+    vector<int> selected(N, 0);
     
     while (notSelected > 0) {
         int idx = max_index(degree);
@@ -43,6 +49,7 @@ int greedy_estimation(int N, vector<vector<int>> &edges, vector<int> degree) {
         --notSelected;
 
         included[idx] = true;
+        selected[idx] = 1;
 
         for (auto &v: edges[idx]) {
             if (!included[v]) {
@@ -56,7 +63,7 @@ int greedy_estimation(int N, vector<vector<int>> &edges, vector<int> degree) {
         degree[idx] = -1;
     }
 
-    return answer;
+    return make_pair(answer, selected);
 }
 
 #endif

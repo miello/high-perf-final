@@ -4,3 +4,6 @@ build:
 	
 benchmark:
 	./benchmark.sh > benchmark_result.txt 2>&1
+
+run:
+	./power_grid ./PowerGrid/$(FILE) $(FILE).out
