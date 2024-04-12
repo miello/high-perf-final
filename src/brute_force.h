@@ -33,6 +33,18 @@ int calculate_branching(
     return low;
 }
 
+bool is_still_cover(
+    int N,
+    vector<int> &selected,
+    vector<pair<int, int>> &degs
+) {
+    for (int i = 0; i < N; ++i) {
+        if (selected[i] + degs[i].first == 0) return false;
+    }
+
+    return true;
+}
+
 void bruteforce_helper(
     int idx, 
     int N, 
@@ -50,6 +62,7 @@ void bruteforce_helper(
     }
 
     if (idx == N) return;
+    if (!is_still_cover(N, selected, degs)) return;
     
     int branching = calculate_branching(remaining, choose, degs);
     int lower_bound = cnt + branching;
@@ -60,7 +73,6 @@ void bruteforce_helper(
 
     remaining -= !selected[idx];
     ++selected[idx];
-    --degs[idx].first;
 
     bool need_walk = false;
 
@@ -71,17 +83,17 @@ void bruteforce_helper(
         --degs[i].first;
     }
 
+    choose[idx] = 1;
+
     // Recurrence
 
-    choose[idx] = 1;
     if (need_walk) bruteforce_helper(idx + 1, N, cnt + 1, remaining, choose, selected, edges, degs, ans);
-    choose[idx] = -1;
 
     // Recover state
+    choose[idx] = -1;
 
     --selected[idx];
     remaining += !selected[idx];
-    ++degs[idx].first;
     
     for (auto &i: edges[idx]) {
         --selected[i];
@@ -91,8 +103,17 @@ void bruteforce_helper(
 
     // Not Selected
 
+    for (auto &i: edges[idx]) {  
+        --degs[i].first;
+    }
+
     choose[idx] = 0;
     bruteforce_helper(idx + 1, N, cnt, remaining, choose, selected, edges, degs, ans);
+
+    choose[idx] = -1;
+    for (auto &i: edges[idx]) {  
+        ++degs[i].first;
+    }
 }
 
 void bruteforce_solve(int N, vector<vector<int>> &edges, pair<int, vector<int>> &ans) {

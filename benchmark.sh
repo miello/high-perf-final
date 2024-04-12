@@ -28,6 +28,8 @@ for filename in PowerGrid/*; do
 
     ./validator "$filename" "out/$name.out"
 
+    echo "\n"
+
     success+=("$name")
 done
 
