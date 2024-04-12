@@ -21,4 +21,4 @@ RUN apk update && \
 
 COPY --from=build /app/power_grid /app/power_grid
 
-CMD [ "/app/power_grid" ]
+ENTRYPOINT [ "/app/power_grid" ]
