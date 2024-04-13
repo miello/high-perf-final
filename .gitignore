@@ -3,3 +3,4 @@ power_grid
 validator
 *.out
 benchmark_result*.txt
+venv
