@@ -1,15 +1,17 @@
 #!/bin/bash
 
-if [ ! -f power_grid ] || [ ! -f validator ]; then
-    make
-fi
+make
+
+folder_out="out_$(date +%s)"
 
 if [ ! -d PowerGrid ]; then
     unzip testcases.zip
 fi
 
-if [ ! -d out ]; then
-    mkdir out
+if [ ! -d "$folder_out" ]; then
+    mkdir $folder_out
+else 
+    rm -rf $folder_out/*
 fi
 
 success=()
@@ -19,14 +21,14 @@ for filename in PowerGrid/*; do
     echo "=============================================================="
     name=$(basename "$filename")
     echo "$name"
-    timeout 60s time -p ./power_grid "$filename" "out/$name.out"
-    if [ ! -s "out/$name.out" ]; then
+    timeout 5s time -p ./power_grid "$filename" "$folder_out/$name.out"
+    if [ ! -s "$folder_out/$name.out" ]; then
         echo "Failed: Timeout"
         failed+=("$name")
         continue
     fi
 
-    ./validator "$filename" "out/$name.out"
+    ./validator "$filename" "$folder_out/$name.out"
 
     echo "\n"
 
