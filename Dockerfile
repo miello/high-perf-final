@@ -1,24 +1,11 @@
-FROM alpine:3.17.0 AS build
-
-RUN apk update && \
-    apk add --no-cache \
-    libstdc++ \
-    g++ \
-    make
+FROM python:3.11
 
 WORKDIR /app
 
-COPY . .
+COPY requirements.txt requirements.txt
 
-RUN make build
+RUN pip install -r requirements.txt
 
-FROM alpine:3.17.0 AS runtime
+COPY solver.py solver.py
 
-RUN apk update && \
-    apk add --no-cache \
-    libstdc++ \
-    g++
-
-COPY --from=build /app/power_grid /app/power_grid
-
-ENTRYPOINT [ "/app/power_grid" ]
+ENTRYPOINT [ "python", "/app/solver.py" ]

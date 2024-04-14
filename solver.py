@@ -1,4 +1,6 @@
+#!/usr/bin/python3
 from pulp import *
+
 import io, os, sys
 
 if len(sys.argv) != 3:
@@ -24,13 +26,13 @@ for i in range(M):
 for i in range(N):
     graph[i][i] = 1.0
 
-vertex_cover = LpProblem("Vertex Cover Model", LpMinimize)
+vertex_cover = LpProblem("vertex_cover_model", LpMinimize)
 vertex_cover += lpSum(vertex)
 
 for i in range(N):
     vertex_cover += lpSum([graph[i][j] * vertex[j] for j in range(N)]) >= 1
 
-vertex_cover.solve()
+vertex_cover.solve(PULP_CBC_CMD(msg=0))
 
 for i in range(N):
     print(int(value(vertex[i])), end="")
