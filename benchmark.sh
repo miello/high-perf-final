@@ -8,8 +8,8 @@ if [ ! -d PowerGrid ]; then
     unzip testcases.zip
 fi
 
-if [ ! -d out ]; then
-    mkdir out
+if [ ! -d out_python ]; then
+    mkdir out_python
 fi
 
 success=()
@@ -19,14 +19,14 @@ for filename in PowerGrid/*; do
     echo "=============================================================="
     name=$(basename "$filename")
     echo "$name"
-    timeout 60s time -p ./power_grid "$filename" "out/$name.out"
-    if [ ! -s "out/$name.out" ]; then
+    timeout 60s python3 ./solver.py "$filename" "out_python/$name.out"
+    if [ ! -s "out_python/$name.out" ]; then
         echo "Failed: Timeout"
         failed+=("$name")
         continue
     fi
 
-    ./validator "$filename" "out/$name.out"
+    ./validator "$filename" "out_python/$name.out"
 
     echo "\n"
 
