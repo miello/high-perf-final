@@ -4,3 +4,4 @@ validator
 *.out
 benchmark_result*.txt
 venv
+report*

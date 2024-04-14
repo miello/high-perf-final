@@ -48,3 +48,5 @@ echo "Failed: ${#failed[@]}"
 for item in "${failed[@]}"; do
     echo "$item"
 done
+
+python3 ./gen_report.py "$folder_out" "report_$folder_out"
