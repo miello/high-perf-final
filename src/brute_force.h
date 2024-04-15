@@ -15,7 +15,7 @@ using std::vector;
 
 int calculate_branching(
     int remaining,
-    vector<int> choose,
+    vector<int> &choose,
     vector<pair<int, int>> degs)
 {
     int low = 0;
@@ -73,20 +73,24 @@ void bruteforce_helper(
         return;
     }
 
-    if (idx == N)
-        return;
-    if (!is_still_cover(N, selected, out_degs))
-    {
-        return;
-    }
+    if (idx == N) return;
+
+    // debug_print_vector(choose);
+    // debug_print_vector(selected);
+    // debug_print_vector(out_degs);
+
+    if (!is_still_cover(N, selected, out_degs)) return;
 
     int branching = calculate_branching(remaining, choose, degs);
     int lower_bound = cnt + branching;
 
-    if (branching == -1 || branching > N - idx || ans.first <= lower_bound)
+    // cout << "Branching " << idx << " " << N << " " << cnt << " " << branching << "\n";
+
+    if (branching == -1 || ans.first <= lower_bound)
         return;
 
     auto v = vertex[idx];
+    // cout << pre_choose[v] << "\n\n";
 
     // Selected
     if (pre_choose[v] != 0)
@@ -170,7 +174,7 @@ void bruteforce_solve(int N, vector<vector<int>> &edges, pair<int, vector<int>> 
     for (int i = 0; i < N; ++i)
     {
         vertex[i] = tmp[i].second;
-        out_degs[i] = degs[i].second + 1;
+        out_degs[i] = degs[i].first + 1;
     }
 
     #pragma omp parallel for
