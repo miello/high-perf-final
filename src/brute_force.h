@@ -54,6 +54,7 @@ void bruteforce_helper(
     vector<int> &selected,
     vector<vector<int>> &edges,
     vector<pair<int, int>> &degs,
+    vector<pair<int, int>> &out_degs,
     vector<int> &vertex,
     pair<int, vector<int>> &ans
 ) {
@@ -63,13 +64,15 @@ void bruteforce_helper(
     }
 
     if (idx == N) return;
-    if (!is_still_cover(N, selected, degs)) return;
+    if (!is_still_cover(N, selected, out_degs)) {
+        return;
+    }
     
     int branching = calculate_branching(remaining, choose, degs);
     int lower_bound = cnt + branching;
     
     if (branching == -1 || branching > N - idx || ans.first <= lower_bound) return;
-    
+
     auto v = vertex[idx];
 
     // Selected
@@ -91,7 +94,7 @@ void bruteforce_helper(
 
     // Recurrence
 
-    if (need_walk) bruteforce_helper(idx + 1, N, cnt + 1, remaining, choose, selected, edges, degs, vertex, ans);
+    if (need_walk) bruteforce_helper(idx + 1, N, cnt + 1, remaining, choose, selected, edges, degs, out_degs, vertex, ans);
 
     // Recover state
     choose[v] = -1;
@@ -105,12 +108,22 @@ void bruteforce_helper(
         ++degs[i].first;
     }
 
+    if (branching == N - idx) return;
+
     // Not Selected
     choose[v] = 0;
+    --out_degs[v].first;
+    for (auto &i: edges[v]) {
+        --out_degs[i].first;
+    }
 
-    bruteforce_helper(idx + 1, N, cnt, remaining, choose, selected, edges, degs, vertex, ans);
+    bruteforce_helper(idx + 1, N, cnt, remaining, choose, selected, edges, degs, out_degs, vertex, ans);
 
     choose[v] = -1;
+    ++out_degs[v].first;
+    for (auto &i: edges[v]) {
+        ++out_degs[i].first;
+    }
 }
 
 void bruteforce_solve(int N, vector<vector<int>> &edges, pair<int, vector<int>> &ans) {
@@ -119,12 +132,15 @@ void bruteforce_solve(int N, vector<vector<int>> &edges, pair<int, vector<int>> 
 
     for (int i = 0; i < N; ++i) degs[i] = { edges[i].size(), i };
     
-    auto tmp = degs;
+    auto tmp = degs, out_degs = degs;
     sort(tmp.begin(), tmp.end(), greater<pair<int, int>>());
 
-    for (int i = 0; i < N; ++i) vertex[i] = tmp[i].second;    
+    for (int i = 0; i < N; ++i) {
+        vertex[i] = tmp[i].second;
+        ++out_degs[i].first;
+    }
 
-    bruteforce_helper(0, N, 0, N, choose, selected, edges, degs, vertex, ans);
+    bruteforce_helper(0, N, 0, N, choose, selected, edges, degs, out_degs, vertex, ans);
 }
 
 #endif
