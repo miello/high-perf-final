@@ -4,31 +4,36 @@
 #include <vector>
 #include <climits>
 #include <algorithm>
+#include <omp.h>
 #include "utils.h"
 
-using std::vector;
+using std::greater;
 using std::min;
 using std::pair;
-using std::greater;
 using std::sort;
+using std::vector;
 
 int calculate_branching(
-    int remaining, 
-    vector<int> choose, 
-    vector<pair<int, int>> degs
-) {
+    int remaining,
+    vector<int> choose,
+    vector<pair<int, int>> degs)
+{
     int low = 0;
     sort(degs.begin(), degs.end(), greater<pair<int, int>>());
 
-    for (auto &i: degs) {
-        if (remaining <= 0) break;
-        if (choose[i.second] != -1) continue;
-        
+    for (auto &i : degs)
+    {
+        if (remaining <= 0)
+            break;
+        if (choose[i.second] != -1)
+            continue;
+
         remaining -= i.first + 1;
         ++low;
     }
 
-    if (remaining > 0) return -1;
+    if (remaining > 0)
+        return -1;
 
     return low;
 }
@@ -36,111 +41,165 @@ int calculate_branching(
 bool is_still_cover(
     int N,
     vector<int> &selected,
-    vector<pair<int, int>> &degs
-) {
-    for (int i = 0; i < N; ++i) {
-        if (selected[i] + degs[i].first == 0) return false;
+    vector<int> &degs)
+{
+    for (int i = 0; i < N; ++i)
+    {
+        if (selected[i] + degs[i] == 0)
+            return false;
     }
 
     return true;
 }
 
 void bruteforce_helper(
-    int idx, 
-    int N, 
+    int idx,
+    int N,
     int cnt,
     int remaining,
+    vector<int> &pre_choose,
     vector<int> &choose,
     vector<int> &selected,
     vector<vector<int>> &edges,
     vector<pair<int, int>> &degs,
-    vector<pair<int, int>> &out_degs,
+    vector<int> &out_degs,
     vector<int> &vertex,
-    pair<int, vector<int>> &ans
-) {
-    if (remaining <= 0) {
-        if (ans.first > cnt) ans = { cnt, choose };
+    pair<int, vector<int>> &ans)
+{
+    if (remaining <= 0)
+    {
+        if (ans.first > cnt)
+            ans = {cnt, choose};
         return;
     }
 
-    if (idx == N) return;
-    if (!is_still_cover(N, selected, out_degs)) {
+    if (idx == N)
+        return;
+    if (!is_still_cover(N, selected, out_degs))
+    {
         return;
     }
-    
+
     int branching = calculate_branching(remaining, choose, degs);
     int lower_bound = cnt + branching;
-    
-    if (branching == -1 || branching > N - idx || ans.first <= lower_bound) return;
+
+    if (branching == -1 || branching > N - idx || ans.first <= lower_bound)
+        return;
 
     auto v = vertex[idx];
 
     // Selected
+    if (pre_choose[v] != 0)
+    {
+        bool need_walk = false;
 
-    bool need_walk = false;
+        need_walk |= !selected[v];
+        remaining -= !selected[v];
+        ++selected[v];
 
-    need_walk |= !selected[v];
-    remaining -= !selected[v];
-    ++selected[v];
+        for (auto &i : edges[v])
+        {
+            need_walk |= !selected[i];
+            remaining -= !selected[i];
+            ++selected[i];
+            --degs[i].first;
+        }
 
-    for (auto &i: edges[v]) {  
-        remaining -= !selected[i];
-        need_walk |= !selected[i];
-        ++selected[i];
-        --degs[i].first;
+        choose[v] = 1;
+
+        // Recurrence
+
+        if (need_walk)
+            bruteforce_helper(idx + 1, N, cnt + 1, remaining, pre_choose, choose, selected, edges, degs, out_degs, vertex, ans);
+
+        // Recover state
+        choose[v] = -1;
+        --selected[v];
+        remaining += !selected[v];
+
+        for (auto &i : edges[v])
+        {
+            --selected[i];
+            remaining += !selected[i];
+            ++degs[i].first;
+        }
+
+        if (branching == N - idx)
+            return;
     }
 
-    choose[v] = 1;
+    if (pre_choose[v] != 1)
+    {
+        // Not Selected
+        choose[v] = 0;
+        --out_degs[v];
+        for (auto &i : edges[v])
+        {
+            --out_degs[i];
+        }
 
-    // Recurrence
+        bruteforce_helper(idx + 1, N, cnt, remaining, pre_choose, choose, selected, edges, degs, out_degs, vertex, ans);
 
-    if (need_walk) bruteforce_helper(idx + 1, N, cnt + 1, remaining, choose, selected, edges, degs, out_degs, vertex, ans);
-
-    // Recover state
-    choose[v] = -1;
-
-    --selected[v];
-    remaining += !selected[v];
-    
-    for (auto &i: edges[v]) {
-        --selected[i];
-        remaining += !selected[i];
-        ++degs[i].first;
-    }
-
-    if (branching == N - idx) return;
-
-    // Not Selected
-    choose[v] = 0;
-    --out_degs[v].first;
-    for (auto &i: edges[v]) {
-        --out_degs[i].first;
-    }
-
-    bruteforce_helper(idx + 1, N, cnt, remaining, choose, selected, edges, degs, out_degs, vertex, ans);
-
-    choose[v] = -1;
-    ++out_degs[v].first;
-    for (auto &i: edges[v]) {
-        ++out_degs[i].first;
+        choose[v] = -1;
+        ++out_degs[v];
+        for (auto &i : edges[v])
+        {
+            ++out_degs[i];
+        }
     }
 }
 
-void bruteforce_solve(int N, vector<vector<int>> &edges, pair<int, vector<int>> &ans) {
-    vector<int> selected(N, 0), choose(N, -1), vertex(N, 0);
+void bruteforce_solve(int N, vector<vector<int>> &edges, pair<int, vector<int>> &ans)
+{
+    vector<int> vertex(N, 0), out_degs(N, 0);
     vector<pair<int, int>> degs(N);
+    vector<pair<int, vector<int>>> ans_vector(4);
 
-    for (int i = 0; i < N; ++i) degs[i] = { edges[i].size(), i };
-    
-    auto tmp = degs, out_degs = degs;
+    #pragma omp parallel for
+    for (int i = 0; i < 4; i++)
+        ans_vector[i] = ans;
+
+    #pragma omp parallel for
+    for (int i = 0; i < N; ++i)
+        degs[i] = {edges[i].size(), i};
+
+    auto tmp = degs;
     sort(tmp.begin(), tmp.end(), greater<pair<int, int>>());
 
-    for (int i = 0; i < N; ++i) {
+    #pragma omp parallel for
+    for (int i = 0; i < N; ++i)
+    {
         vertex[i] = tmp[i].second;
-        ++out_degs[i].first;
+        out_degs[i] = degs[i].second + 1;
     }
 
-    bruteforce_helper(0, N, 0, N, choose, selected, edges, degs, out_degs, vertex, ans);
+    #pragma omp parallel for
+    for (int i = 0; i < 4; i++)
+    {
+        vector<int> selected(N, 0), choose(N, -1), pre_choose(N, -1);
+
+        auto _degs = degs;
+        auto _out_degs = out_degs;
+
+        pre_choose[vertex[0]] = i & 1;
+        pre_choose[vertex[1]] = (i >> 1) & 1;
+
+        bruteforce_helper(0, N, 0, N, pre_choose, choose, selected, edges, _degs, _out_degs, vertex, ans_vector[i]);
+    }
+
+    int mn = ans.first;
+    int _i = 0;
+
+    for (int i = 0; i < 4; i++)
+    {
+        if (mn > ans_vector[i].first)
+        {
+            _i = i;
+            mn = ans_vector[i].first;
+        }
+    }
+
+    ans = ans_vector[_i];
 }
 
 #endif

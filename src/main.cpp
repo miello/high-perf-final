@@ -45,7 +45,9 @@ int main(int argc, char **argv)
 
     auto ans = greedy_estimation(N, edges, degree);
 
-    bruteforce_solve(N, edges, ans);
-    
+    if (N > 3) {
+        bruteforce_solve(N, edges, ans);
+    }
+
     print_answer(ans.second);
 }

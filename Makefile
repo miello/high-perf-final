@@ -1,5 +1,5 @@
 build:
-	g++ -std=c++17 -O2 -Wall -Wextra -pedantic src/main.cpp -o power_grid
+	g++ -fopenmp -std=c++17 -O2 -Wall -Wextra -pedantic src/main.cpp -o power_grid
 	g++ -std=c++17 -O2 -Wall -Wextra -pedantic src/validator.cpp -o validator
 	
 benchmark:

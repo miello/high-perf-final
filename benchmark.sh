@@ -21,7 +21,7 @@ for filename in PowerGrid/*; do
     echo "=============================================================="
     name=$(basename "$filename")
     echo "$name"
-    timeout 60s time -p ./power_grid "$filename" "$folder_out/$name.out"
+    timeout 10s time -p ./power_grid "$filename" "$folder_out/$name.out"
     if [ ! -s "$folder_out/$name.out" ]; then
         echo "Failed: Timeout"
         failed+=("$name")
