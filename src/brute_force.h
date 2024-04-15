@@ -68,29 +68,39 @@ void bruteforce_helper(
 {
     if (remaining <= 0)
     {
-        if (ans.first > cnt)
-            ans = {cnt, choose};
+        #pragma omp critical(assigned)
+        {
+            if (ans.first > cnt)
+                ans = {cnt, choose};
+        } 
         return;
     }
 
     if (idx == N) return;
-
-    // debug_print_vector(choose);
-    // debug_print_vector(selected);
-    // debug_print_vector(out_degs);
 
     if (!is_still_cover(N, selected, out_degs)) return;
 
     int branching = calculate_branching(remaining, choose, degs);
     int lower_bound = cnt + branching;
 
-    // cout << "Branching " << idx << " " << N << " " << cnt << " " << branching << "\n";
-
     if (branching == -1 || ans.first <= lower_bound)
         return;
 
+    if (branching == N - idx) {
+        #pragma omp critical(assigned)
+        {
+            if (lower_bound <= ans.first) {
+                for (int i = idx; i < N; ++i) choose[vertex[i]] = 1;
+                
+                ans = { lower_bound, choose };
+
+                for (int i = idx; i < N; ++i) choose[vertex[i]] = -1;
+            }
+        }
+        return;
+    }
+
     auto v = vertex[idx];
-    // cout << pre_choose[v] << "\n\n";
 
     // Selected
     if (pre_choose[v] != 0)
@@ -127,9 +137,6 @@ void bruteforce_helper(
             remaining += !selected[i];
             ++degs[i].first;
         }
-
-        if (branching == N - idx)
-            return;
     }
 
     if (pre_choose[v] != 1)
@@ -188,22 +195,8 @@ void bruteforce_solve(int N, vector<vector<int>> &edges, pair<int, vector<int>> 
         pre_choose[vertex[0]] = i & 1;
         pre_choose[vertex[1]] = (i >> 1) & 1;
 
-        bruteforce_helper(0, N, 0, N, pre_choose, choose, selected, edges, _degs, _out_degs, vertex, ans_vector[i]);
+        bruteforce_helper(0, N, 0, N, pre_choose, choose, selected, edges, _degs, _out_degs, vertex, ans);
     }
-
-    int mn = ans.first;
-    int _i = 0;
-
-    for (int i = 0; i < 4; i++)
-    {
-        if (mn > ans_vector[i].first)
-        {
-            _i = i;
-            mn = ans_vector[i].first;
-        }
-    }
-
-    ans = ans_vector[_i];
 }
 
 #endif

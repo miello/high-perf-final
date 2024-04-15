@@ -7,4 +7,4 @@ benchmark:
 
 run:
 	make build
-	./power_grid ./PowerGrid/$(FILE) $(FILE).out
+	time -p ./power_grid ./PowerGrid/$(FILE) $(FILE).out
