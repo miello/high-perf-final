@@ -76,9 +76,7 @@ void bruteforce_helper(
         return;
     }
 
-    if (idx == N) return;
-
-    if (!is_still_cover(N, selected, out_degs)) return;
+    if (idx == N || !is_still_cover(N, selected, out_degs)) return;
 
     int branching = calculate_branching(remaining, choose, degs);
     int lower_bound = cnt + branching;
