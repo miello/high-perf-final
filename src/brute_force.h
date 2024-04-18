@@ -13,7 +13,7 @@ using std::pair;
 using std::sort;
 using std::vector;
 
-int calculate_branching(
+inline int calculate_branching(
     int remaining,
     vector<int> &choose,
     vector<pair<int, int>> degs)
@@ -38,7 +38,7 @@ int calculate_branching(
     return low;
 }
 
-bool is_still_cover(
+inline bool is_still_cover(
     int N,
     vector<int> &selected,
     vector<int> &degs)
@@ -50,6 +50,62 @@ bool is_still_cover(
     }
 
     return true;
+}
+
+enum MutateState {
+    FORWARD = 1,
+    REVERT = 0
+};
+
+inline bool mutate_selected(
+    int v,
+    MutateState mode,
+    int &remaining,
+    vector<int> &selected,
+    vector<vector<int>> &edges,
+    vector<pair<int, int>> &degs
+) {
+    bool need_walk = false;
+
+    if (mode == MutateState::FORWARD) {
+        need_walk |= !selected[v];
+        remaining -= !selected[v];
+        ++selected[v];
+
+        for (auto &i : edges[v])
+        {
+            need_walk |= !selected[i];
+            remaining -= !selected[i];
+            ++selected[i];
+            --degs[i].first;
+        }
+    } else {
+        --selected[v];
+        remaining += !selected[v];
+
+        for (auto &i : edges[v])
+        {
+            --selected[i];
+            remaining += !selected[i];
+            ++degs[i].first;
+        }
+    }
+
+    return need_walk;
+}
+
+void mutate_not_selected(int v, MutateState mode, vector<int> &out_degs, vector<vector<int>> &edges) {
+    if (mode == MutateState::FORWARD) {
+        --out_degs[v];
+        for (auto &i : edges[v]) {
+            --out_degs[i];
+        }
+    } else {
+        ++out_degs[v];
+        for (auto &i : edges[v]) {
+            ++out_degs[i];
+        }
+    }
 }
 
 void bruteforce_helper(
@@ -77,6 +133,13 @@ void bruteforce_helper(
     }
 
     if (idx == N || !is_still_cover(N, selected, out_degs)) return;
+    
+    auto v = vertex[idx];
+
+    if (choose[v] != -1) {
+        bruteforce_helper(idx + 1, N, cnt, remaining, pre_choose, choose, selected, edges, degs, out_degs, vertex, ans);
+        return;
+    }
 
     int branching = calculate_branching(remaining, choose, degs);
     int lower_bound = cnt + branching;
@@ -98,26 +161,10 @@ void bruteforce_helper(
         return;
     }
 
-    auto v = vertex[idx];
-
-    // Selected
-    if (pre_choose[v] != 0)
-    {
-        bool need_walk = false;
-
-        need_walk |= !selected[v];
-        remaining -= !selected[v];
-        ++selected[v];
-
-        for (auto &i : edges[v])
-        {
-            need_walk |= !selected[i];
-            remaining -= !selected[i];
-            ++selected[i];
-            --degs[i].first;
-        }
-
+    if (pre_choose[v] != 0) {
+        // Selected
         choose[v] = 1;
+        bool need_walk = mutate_selected(v, MutateState::FORWARD, remaining, selected, edges, degs);
 
         // Recurrence
 
@@ -125,36 +172,20 @@ void bruteforce_helper(
             bruteforce_helper(idx + 1, N, cnt + 1, remaining, pre_choose, choose, selected, edges, degs, out_degs, vertex, ans);
 
         // Recover state
-        choose[v] = -1;
-        --selected[v];
-        remaining += !selected[v];
 
-        for (auto &i : edges[v])
-        {
-            --selected[i];
-            remaining += !selected[i];
-            ++degs[i].first;
-        }
+        choose[v] = -1;
+        mutate_selected(v, MutateState::REVERT, remaining, selected, edges, degs);
     }
 
-    if (pre_choose[v] != 1)
-    {
+    if (pre_choose[v] != 1) {
         // Not Selected
         choose[v] = 0;
-        --out_degs[v];
-        for (auto &i : edges[v])
-        {
-            --out_degs[i];
-        }
+        mutate_not_selected(v, MutateState::FORWARD, out_degs, edges);
 
         bruteforce_helper(idx + 1, N, cnt, remaining, pre_choose, choose, selected, edges, degs, out_degs, vertex, ans);
 
         choose[v] = -1;
-        ++out_degs[v];
-        for (auto &i : edges[v])
-        {
-            ++out_degs[i];
-        }
+        mutate_not_selected(v, MutateState::REVERT, out_degs, edges);
     }
 }
 
@@ -182,18 +213,49 @@ void bruteforce_solve(int N, vector<vector<int>> &edges, pair<int, vector<int>> 
         out_degs[i] = degs[i].first + 1;
     }
 
+    vector<int> selected(N, 0), choose(N, -1);
+    int cnt = 0, remaining = N;
+    for (int i = 0; i < N; ++i) {
+        int deg_i = edges[i].size();
+        if (deg_i == 0) {
+            ++cnt;
+            choose[i] = 1;
+            mutate_selected(i, MutateState::FORWARD, remaining, selected, edges, degs);
+        }
+    
+        if (deg_i == 1) {
+            int other_v = edges[i][0];
+
+            if (choose[other_v] == -1) {
+                ++cnt;
+                choose[other_v] = 1;
+                mutate_selected(other_v, MutateState::FORWARD, remaining, selected, edges, degs);
+            }
+
+            if (choose[i] == -1) {
+                choose[i] = 0;
+                mutate_not_selected(i, MutateState::FORWARD, out_degs, edges);
+            }
+        }
+    }
+
     #pragma omp parallel for
-    for (int i = 0; i < 4; i++)
-    {
-        vector<int> selected(N, 0), choose(N, -1), pre_choose(N, -1);
+    for (int i = 0; i < 4; ++i) {
+        vector<int> pre_choose(N, -1);
 
         auto _degs = degs;
         auto _out_degs = out_degs;
+        auto _choose = choose;
+        auto _selected = selected;
 
-        pre_choose[vertex[0]] = i & 1;
-        pre_choose[vertex[1]] = (i >> 1) & 1;
-
-        bruteforce_helper(0, N, 0, N, pre_choose, choose, selected, edges, _degs, _out_degs, vertex, ans);
+        for (int j = 0, k = 1; j < N && k >= 0; ++j) {
+            if (_choose[vertex[j]] == -1) {
+                pre_choose[vertex[j]] = (i >> k) & 1;
+                --k;
+            }
+        }
+    
+        bruteforce_helper(0, N, cnt, remaining, pre_choose, _choose, _selected, edges, _degs, _out_degs, vertex, ans);
     }
 }
 
