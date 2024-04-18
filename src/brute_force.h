@@ -152,6 +152,17 @@ void bruteforce_helper(
         return;
     }
 
+    if (pre_choose[v] != 1) {
+        // Not Selected
+        choose[v] = 0;
+        bool is_cover = mutate_not_selected(v, MutateState::FORWARD, out_degs, edges, selected);
+
+        if (is_cover) bruteforce_helper(idx + 1, N, cnt, remaining, pre_choose, choose, selected, edges, degs, out_degs, vertex, ans);
+
+        choose[v] = -1;
+        mutate_not_selected(v, MutateState::REVERT, out_degs, edges, selected);
+    }
+
     if (pre_choose[v] != 0) {
         // Selected
         choose[v] = 1;
@@ -166,17 +177,6 @@ void bruteforce_helper(
 
         choose[v] = -1;
         mutate_selected(v, MutateState::REVERT, remaining, selected, edges, degs);
-    }
-
-    if (pre_choose[v] != 1) {
-        // Not Selected
-        choose[v] = 0;
-        bool is_cover = mutate_not_selected(v, MutateState::FORWARD, out_degs, edges, selected);
-
-        if (is_cover) bruteforce_helper(idx + 1, N, cnt, remaining, pre_choose, choose, selected, edges, degs, out_degs, vertex, ans);
-
-        choose[v] = -1;
-        mutate_not_selected(v, MutateState::REVERT, out_degs, edges, selected);
     }
 }
 
