@@ -26,8 +26,12 @@ void debug_print_vector(vector<T> &v) {
 
 template <typename T>
 void print_answer(vector<T> &v) {
+    int _default = 0;
     for (auto i: v) {
-        cout << (i == -1 ? 0: i);
+        if (i == 2) _default = 1;
+    }
+    for (auto i: v) {
+        cout << ((i == -1 || i == 2) ? _default: i);
     }
 }
 
