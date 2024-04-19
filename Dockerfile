@@ -6,10 +6,6 @@ RUN apk update && \
     g++ \
     make
 
-# Install openmp
-RUN apk add --no-cache \
-    libomp-dev
-
 WORKDIR /app
 
 COPY . .
